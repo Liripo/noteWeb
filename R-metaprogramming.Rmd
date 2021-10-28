@@ -11,7 +11,9 @@ output:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE,collapse = T)
+knitr::opts_chunk$set(echo = TRUE,
+                      collapse = T,
+                      error = T)
 ```
 
 # R 元编程（**metaprogramming**）笔记
@@ -58,7 +60,39 @@ enquote(1:9 + 2)
 ```{r}
 substitute(a + b, list(b = 1))
 substitute(a + b, baseenv())
-b <- 1
-substitute(a + b, globalenv())
+b <- 1;substitute(a + b, globalenv())
 bquote(x <- .(x) + 1, list(x = 1:9))
+```
+
+### eval执行代码
+
+`eval(expr, envir, enclos)`执行捕获的代码，其中**envir**是代码中变量名的首要查找位置，**envir**中查找不到的变量名会在**enclos**中查找。
+
+在指定的环境中计算R表达式。
+
+```{r}
+在指定的环境中计算R表达式
+#local函数默认情况下会在一个临时执行环境中执行代码，可以有效的舍弃运算过程中产生的中间变量，返回最后一行表达式，类似函数。
+local({
+  a <- 1:9;
+  b <- a
+},envir = new.env())
+a;b
+```
+
+由操作符`~`构成的命令，被捕获或执行后结果是一致的，唯一的区别在于**～**被捕获后产生的结果没有属性（**attributes**）部分，但无论何种情况我们可以像操作命令树一样取出**\~**前后的内容，所以**`~`**经常被用作捕获代码的便捷操作符号。
+
+```{r}
+str(eval(y~x))
+str(quote(y~x))
+```
+
+命令集（**expression**）本身就是未被执行的命令的集合，所以被捕获之后生成的是一个生成该命令集的命令，需要被执行两次才能取出执行结果。
+
+<https://blog.csdn.net/songzhilian22/article/details/49487467>
+
+<https://blog.csdn.net/songzhilian22/article/details/49487467>
+
+```{r}
+knitr::include_graphics("./images/rmetaprogramming.svg")
 ```

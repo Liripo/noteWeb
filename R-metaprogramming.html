@@ -307,11 +307,33 @@ enquote(1:9 + 2)
 ## a + 1
 substitute(a + b, baseenv())
 ## .Primitive(&quot;+&quot;)(a, b)
-b &lt;- 1
-substitute(a + b, globalenv())
+b &lt;- 1;substitute(a + b, globalenv())
 ## a + b
 bquote(x &lt;- .(x) + 1, list(x = 1:9))
 ## x &lt;- 1:9 + 1</code></pre>
+</div>
+<div id="eval执行代码" class="section level3">
+<h3>eval执行代码</h3>
+<p><code>eval(expr, envir, enclos)</code>执行捕获的代码，其中<strong>envir</strong>是代码中变量名的首要查找位置，<strong>envir</strong>中查找不到的变量名会在<strong>enclos</strong>中查找。</p>
+<p>在指定的环境中计算R表达式。</p>
+<pre class="r"><code>在指定的环境中计算R表达式
+## Error in eval(expr, envir, enclos): object &#39;在指定的环境中计算R表达式&#39; not found
+#local函数默认情况下会在一个临时执行环境中执行代码，可以有效的舍弃运算过程中产生的中间变量，返回最后一行表达式，类似函数。
+local({
+  a &lt;- 1:9;
+  b &lt;- a
+},envir = new.env())
+a;b
+## Error in eval(expr, envir, enclos): object &#39;a&#39; not found
+## [1] 1</code></pre>
+<p>由操作符<code>~</code>构成的命令，被捕获或执行后结果是一致的，唯一的区别在于<strong>～</strong>被捕获后产生的结果没有属性（<strong>attributes</strong>）部分，但无论何种情况我们可以像操作命令树一样取出<strong>~</strong>前后的内容，所以<strong><code>~</code></strong>经常被用作捕获代码的便捷操作符号。</p>
+<pre class="r"><code>str(eval(y~x))
+## Class &#39;formula&#39;  language y ~ x
+##   ..- attr(*, &quot;.Environment&quot;)=&lt;environment: R_GlobalEnv&gt;
+str(quote(y~x))
+##  language y ~ x</code></pre>
+<pre class="r"><code>knitr::include_graphics(&quot;./images/rmetaprogramming.svg&quot;)</code></pre>
+<p><img src="images/rmetaprogramming.svg" /><!-- --></p>
 </div>
 </div>
 </div>
