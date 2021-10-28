@@ -1,0 +1,8 @@
+name: "noteWeb"
+navbar:
+  title: "noteWeb"
+  left:
+    - text: "Home"
+      href: index.html
+    - text: "R"
+      href: docs/R-metaprogramming.html
