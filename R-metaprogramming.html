@@ -12,24 +12,15 @@
 <meta name="author" content="Liripo" />
 
 
-<title>index</title>
+<title>R 元编程学习</title>
 
 <script src="site_libs/header-attrs-2.9/header-attrs.js"></script>
-<script src="site_libs/jquery-1.11.3/jquery.min.js"></script>
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<link href="site_libs/bootstrap-3.3.5/css/bootstrap.min.css" rel="stylesheet" />
-<script src="site_libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
-<script src="site_libs/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
-<script src="site_libs/bootstrap-3.3.5/shim/respond.min.js"></script>
-<style>h1 {font-size: 34px;}
-       h1.title {font-size: 38px;}
-       h2 {font-size: 30px;}
-       h3 {font-size: 24px;}
-       h4 {font-size: 18px;}
-       h5 {font-size: 16px;}
-       h6 {font-size: 12px;}
-       code {color: inherit; background-color: rgba(0, 0, 0, 0.04);}
-       pre:not([class]) { background-color: white }</style>
+<script src="site_libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+<link href="site_libs/bootstrap-4.6.0/bootstrap.min.css" rel="stylesheet" />
+<script src="site_libs/bootstrap-4.6.0/bootstrap.bundle.min.js"></script>
+<script src="site_libs/bs3compat-0.2.5.1/tabs.js"></script>
+<script src="site_libs/bs3compat-0.2.5.1/bs3compat.js"></script>
 <script src="site_libs/navigation-1.1/tabsets.js"></script>
 <link href="site_libs/highlightjs-9.12.0/default.css" rel="stylesheet" />
 <script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
@@ -246,7 +237,7 @@ $(document).ready(function () {
   <a href="index.html">Home</a>
 </li>
 <li>
-  <a href="docs/R-metaprogramming.html">R</a>
+  <a href="R-metaprogramming.html">R</a>
 </li>
       </ul>
       <ul class="nav navbar-nav navbar-right">
@@ -260,14 +251,70 @@ $(document).ready(function () {
 
 
 
-<h1 class="title toc-ignore">index</h1>
+<h1 class="title toc-ignore">R 元编程学习</h1>
 <h4 class="author">Liripo</h4>
 <h4 class="date">2021/10/28</h4>
 
 </div>
 
 
-<p>测试</p>
+<div id="r-元编程metaprogramming笔记" class="section level1">
+<h1>R 元编程（<strong>metaprogramming</strong>）笔记</h1>
+<blockquote>
+<p>元编程概念：编写运行时动态修改程序本身的代码（编写产生代码的代码）【使用编程语言来操作或修改自己的代码,代码就是数据】</p>
+</blockquote>
+<p>R中进行元编程的操作可以使用<code>base R</code>中的函数，也可以使用<code>rlang</code>函数【tidyverse用的就是这个】，当然，<code>data.table</code>也有自己的元编程。</p>
+<p>通过操作命令与执行环境，操作自己的代码</p>
+<div id="base-r" class="section level2">
+<h2>base R</h2>
+<div id="call函数" class="section level3">
+<h3>call函数</h3>
+<p>call函数构建一个命令（<strong>function call</strong>），其第一个参数必须是一个字符串，指明需要被构建的命令，其余参数都会被传递给新生成的命令。</p>
+<pre class="r"><code>cl &lt;- call(&quot;round&quot;,1.11)
+cl
+## round(1.11)
+class(cl);typeof(cl)
+## [1] &quot;call&quot;
+## [1] &quot;language&quot;
+identical(cl,quote(round(1.11)))
+## [1] TRUE
+is.call(cl) &amp;&amp; is.language(cl)
+## [1] TRUE
+eval(cl)
+## [1] 1
+(cl_list &lt;- as.list(cl))
+## [[1]]
+## round
+## 
+## [[2]]
+## [1] 1.11
+as.call(cl_list)
+## round(1.11)
+mode(cl_list) &lt;- &quot;call&quot;;cl_list
+## round(1.11)</code></pre>
+<p><code>do.call(what, args, quote = FALSE, envir = parent.frame())</code>命令则是直接在<code>envir</code>中执行<code>call</code>命令。</p>
+</div>
+<div id="捕获代码" class="section level3">
+<h3>捕获代码</h3>
+<p><code>quote(expr)</code>函数捕获未执行的代码。<code>enquote(cl)</code>捕获代码的运行结果,cl为<code>call</code>对象。</p>
+<pre class="r"><code>quote(1:9 + 2)
+## 1:9 + 2
+enquote(1:9 + 2)
+## base::quote(c(3, 4, 5, 6, 7, 8, 9, 10, 11))</code></pre>
+<p>如果希望捕获代码中，某些变量名被替换为对应的值，可以使用<code>substitute(expr, env)</code>,<strong><code>substitute</code></strong>函数除了需要捕获的代码，还可以传递一个替换环境<strong>env</strong>（可以是<code>列表</code>、<code>数据框</code>、<code>执行环境</code>等）参数，此时代码中的变量名如果在<strong>env</strong>中有对应的值，则会被替换为相应的值，除非<strong>env</strong>是全局执行环境。</p>
+<p>如果只希望特定的变量名可以被替换，而非所有在执行环境中存在的变量都会被替换，则可以使用<code>bquote</code>函数，该函数定义了一种特殊的语法格式——所有被包含在<strong><code>.()</code></strong>中的变量名才会被替换。</p>
+<pre class="r"><code>substitute(a + b, list(b = 1))
+## a + 1
+substitute(a + b, baseenv())
+## .Primitive(&quot;+&quot;)(a, b)
+b &lt;- 1
+substitute(a + b, globalenv())
+## a + b
+bquote(x &lt;- .(x) + 1, list(x = 1:9))
+## x &lt;- 1:9 + 1</code></pre>
+</div>
+</div>
+</div>
 
 
 

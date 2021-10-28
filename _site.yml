@@ -5,4 +5,7 @@ navbar:
     - text: "Home"
       href: index.html
     - text: "R"
-      href: docs/R-metaprogramming.html
+      href: R-metaprogramming.html
+output_dir: "."
+#include: ["import.R"]
+#exclude: ["docs.txt", "*.csv"]
