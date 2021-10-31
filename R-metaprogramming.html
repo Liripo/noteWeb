@@ -19,8 +19,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
 <link href="site_libs/bootstrap-4.6.0/bootstrap.min.css" rel="stylesheet" />
 <script src="site_libs/bootstrap-4.6.0/bootstrap.bundle.min.js"></script>
-<script src="site_libs/bs3compat-0.2.5.1/tabs.js"></script>
-<script src="site_libs/bs3compat-0.2.5.1/bs3compat.js"></script>
+<script src="site_libs/bs3compat-0.3.1/transition.js"></script>
+<script src="site_libs/bs3compat-0.3.1/tabs.js"></script>
+<script src="site_libs/bs3compat-0.3.1/bs3compat.js"></script>
 <script src="site_libs/navigation-1.1/tabsets.js"></script>
 <link href="site_libs/highlightjs-9.12.0/default.css" rel="stylesheet" />
 <script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
@@ -263,8 +264,31 @@ $(document).ready(function () {
 <blockquote>
 <p>元编程概念：编写运行时动态修改程序本身的代码（编写产生代码的代码）【使用编程语言来操作或修改自己的代码,代码就是数据】</p>
 </blockquote>
-<p>R中进行元编程的操作可以使用<code>base R</code>中的函数，也可以使用<code>rlang</code>函数【tidyverse用的就是这个】，当然，<code>data.table</code>也有自己的元编程。</p>
-<p>通过操作命令与执行环境，操作自己的代码</p>
+<p>R中进行元编程的操作可以使用<code>base R</code>中的函数，也可以使用<code>rlang</code>函数【<code>Tidy evaluation</code>的实现】，当然，<code>data.table</code>也有自己的元编程。</p>
+<p>通过操作命令（表达式）与执行环境，操作自己的代码。 在R语言中，“表达式”的概念有狭义和广义两种意义。狭义的表达式指表达式（expression）类对象，由<code>expression</code>函数产生；而广义的的表达式既包含expression类，也包含R<code>language</code>类。<code>expression</code>和<code>language</code>是R语言中两种特殊数据类：</p>
+<pre class="r"><code>getClass(&quot;expression&quot;)
+## Class &quot;expression&quot; [package &quot;methods&quot;]
+## 
+## No Slots, prototype of class &quot;expression&quot;
+## 
+## Extends: &quot;vector&quot;
+getClass(&quot;language&quot;)
+## Virtual Class &quot;language&quot; [package &quot;methods&quot;]
+## 
+## No Slots, prototype of class &quot;name&quot;
+## 
+## Known Subclasses: 
+## Class &quot;name&quot;, directly
+## Class &quot;call&quot;, directly
+## Class &quot;{&quot;, directly
+## Class &quot;if&quot;, directly
+## Class &quot;&lt;-&quot;, directly
+## Class &quot;for&quot;, directly
+## Class &quot;while&quot;, directly
+## Class &quot;repeat&quot;, directly
+## Class &quot;(&quot;, directly
+## Class &quot;.name&quot;, by class &quot;name&quot;, distance 2, with explicit coerce</code></pre>
+<p>可以看到<code>expression</code>类由<strong>向量</strong>派生得到，<code>language</code>类是虚拟类，它包括我们熟悉的程序<strong>控制关键词/符号</strong>和<strong>name</strong>、<strong>call</strong> 子类。</p>
 <div id="base-r" class="section level2">
 <h2>base R</h2>
 <div id="call函数" class="section level3">
@@ -311,13 +335,66 @@ b &lt;- 1;substitute(a + b, globalenv())
 ## a + b
 bquote(x &lt;- .(x) + 1, list(x = 1:9))
 ## x &lt;- 1:9 + 1</code></pre>
+<p>由操作符<code>~</code>构成的命令，被捕获或执行后结果是一致的，唯一的区别在于<strong>～</strong>被捕获后产生的结果没有属性（<strong>attributes</strong>）部分，但无论何种情况我们可以像操作命令树一样取出<strong>~</strong>前后的内容，所以<strong><code>~</code></strong>经常被用作捕获代码的便捷操作符号。</p>
+<pre class="r"><code>str(eval(y~x))
+## Class &#39;formula&#39;  language y ~ x
+##   ..- attr(*, &quot;.Environment&quot;)=&lt;environment: R_GlobalEnv&gt;
+str(quote(y~x))
+##  language y ~ x
+f &lt;- y~x+z
+class(f);typeof(f)
+## [1] &quot;formula&quot;
+## [1] &quot;language&quot;
+terms(f)
+## y ~ x + z
+## attr(,&quot;variables&quot;)
+## list(y, x, z)
+## attr(,&quot;factors&quot;)
+##   x z
+## y 0 0
+## x 1 0
+## z 0 1
+## attr(,&quot;term.labels&quot;)
+## [1] &quot;x&quot; &quot;z&quot;
+## attr(,&quot;order&quot;)
+## [1] 1 1
+## attr(,&quot;intercept&quot;)
+## [1] 1
+## attr(,&quot;response&quot;)
+## [1] 1
+## attr(,&quot;.Environment&quot;)
+## &lt;environment: R_GlobalEnv&gt;</code></pre>
+<blockquote>
+<p><code>terms</code>可以用于提取公式的信息，更具体的，可以<code>?formula</code></p>
+</blockquote>
+<p>命令集（<strong>expression</strong>）本身就是未被执行的命令的集合，所以被捕获之后生成的是一个生成该命令集的命令，需要被执行两次才能取出执行结果。</p>
+<pre class="r"><code>#一个表达式向量
+(ex &lt;- expression(x = 1, 1 + sqrt(2)))
+## expression(x = 1, 1 + sqrt(2))
+length(ex);ex[2];typeof(ex[1])
+## [1] 2
+## expression(1 + sqrt(2))
+## [1] &quot;expression&quot;
+as.list(ex)
+## $x
+## [1] 1
+## 
+## [[2]]
+## 1 + sqrt(2)
+lapply(ex,eval)
+## $x
+## [1] 1
+## 
+## [[2]]
+## [1] 2.414214</code></pre>
 </div>
 <div id="eval执行代码" class="section level3">
 <h3>eval执行代码</h3>
 <p><code>eval(expr, envir, enclos)</code>执行捕获的代码，其中<strong>envir</strong>是代码中变量名的首要查找位置，<strong>envir</strong>中查找不到的变量名会在<strong>enclos</strong>中查找。</p>
 <p>在指定的环境中计算R表达式。</p>
-<pre class="r"><code>在指定的环境中计算R表达式
-## Error in eval(expr, envir, enclos): object &#39;在指定的环境中计算R表达式&#39; not found
+<pre class="r"><code>#在指定的环境中计算R表达式
+eval(1+1,envir = globalenv())
+## [1] 2
 #local函数默认情况下会在一个临时执行环境中执行代码，可以有效的舍弃运算过程中产生的中间变量，返回最后一行表达式，类似函数。
 local({
   a &lt;- 1:9;
@@ -326,14 +403,138 @@ local({
 a;b
 ## Error in eval(expr, envir, enclos): object &#39;a&#39; not found
 ## [1] 1</code></pre>
-<p>由操作符<code>~</code>构成的命令，被捕获或执行后结果是一致的，唯一的区别在于<strong>～</strong>被捕获后产生的结果没有属性（<strong>attributes</strong>）部分，但无论何种情况我们可以像操作命令树一样取出<strong>~</strong>前后的内容，所以<strong><code>~</code></strong>经常被用作捕获代码的便捷操作符号。</p>
-<pre class="r"><code>str(eval(y~x))
-## Class &#39;formula&#39;  language y ~ x
-##   ..- attr(*, &quot;.Environment&quot;)=&lt;environment: R_GlobalEnv&gt;
-str(quote(y~x))
-##  language y ~ x</code></pre>
+<p>可以看到<code>a</code>变量并不在调用环境中。</p>
+</div>
+<div id="表达式解析parse与deparse" class="section level3">
+<h3>表达式解析parse与deparse</h3>
+<pre class="r"><code>(ex &lt;- parse(text = &quot;local({a &lt;- 1;1})&quot;))
+## expression(local({
+##     a &lt;- 1
+##     1
+## }))
+deparse(quote(x &lt;- 1))
+## [1] &quot;x &lt;- 1&quot;
+deparse(ex[1])
+## [1] &quot;expression(local({&quot; &quot;    a &lt;- 1&quot;         &quot;    1&quot;             
+## [4] &quot;}))&quot;
+deparse(args(lm))
+## [1] &quot;function (formula, data, subset, weights, na.action, method = \&quot;qr\&quot;, &quot; 
+## [2] &quot;    model = TRUE, x = FALSE, y = FALSE, qr = TRUE, singular.ok = TRUE, &quot;
+## [3] &quot;    contrasts = NULL, offset, ...) &quot;                                    
+## [4] &quot;NULL&quot;</code></pre>
+<p>总体而已，<code>base R</code>这些函数关系大概如下：</p>
 <pre class="r"><code>knitr::include_graphics(&quot;./images/rmetaprogramming.svg&quot;)</code></pre>
 <p><img src="images/rmetaprogramming.svg" /><!-- --></p>
+</div>
+</div>
+<div id="tidy-evaluation" class="section level2">
+<h2>Tidy evaluation</h2>
+<p>书籍：<a href="https://adv-r.hadley.nz/metaprogramming.html">Advanced R</a><strong>metaprogramming</strong>章节。</p>
+<pre class="r"><code>library(rlang)</code></pre>
+<div id="捕获表达式" class="section level3">
+<h3>捕获表达式</h3>
+<p>类似<code>quote</code>,<strong>rlang</strong>使用<code>expr(expr)</code>捕获代码：</p>
+<pre class="r"><code>expr(mean(x, na.rm = TRUE))
+## mean(x, na.rm = TRUE)
+expr(10 + 100 + 1000)
+## 10 + 100 + 1000</code></pre>
+<p><code>expr</code>能捕获键入的代码，但是没法捕获传递给函数参数的代码，所以<code>rlang</code>提供了<code>enexpr</code>函数：<a href="https://dplyr.tidyverse.org/reference/tidyeval-compat.html"><code>enexpr()</code></a>接受一个惰性求值（被冻结的，<strong>promise??</strong>）的参数并将其转换为一个表达式:</p>
+<pre class="r"><code>capture_it &lt;- function(x) {
+  expr(x)
+}
+capture_it(a + b + c)
+## x</code></pre>
+<pre class="r"><code>capture_it &lt;- function(x) {
+  enexpr(x)
+}
+capture_it(a + b + c)
+## a + b + c</code></pre>
+<p>类似地，<code>substitute()</code>可以完成<code>enexpr</code>的工作：</p>
+<pre class="r"><code>capture_it &lt;- function(x) {
+  substitute(x)
+}
+capture_it(a + b + c)
+## a + b + c</code></pre>
+</div>
+<div id="生成表达式" class="section level3">
+<h3>生成表达式</h3>
+<p>几乎每种编程语言都将代码表示为一棵树，通常称为<strong>抽象语法树</strong>，简称 AST。在R中，可以通过<code>lobstr::ast(x)</code>查看代码树。</p>
+<pre class="r"><code>lobstr::ast(f1(f2(a = 1+2*3, b), f3(1, f4(2))))
+## █─f1 
+## ├─█─f2 
+## │ ├─a = █─`+` 
+## │ │     ├─1 
+## │ │     └─█─`*` 
+## │ │       ├─2 
+## │ │       └─3 
+## │ └─b 
+## └─█─f3 
+##   ├─1 
+##   └─█─f4 
+##     └─2</code></pre>
+<p>在base R中提供<code>call</code>函数生成代码，而<code>rlang</code>则使用<code>call2</code>和unquoting。</p>
+<pre class="r"><code>call2(&quot;+&quot;, 1, call2(&quot;*&quot;, 2, 3))
+## 1 + 2 * 3</code></pre>
+<p><code>rlang</code>使用<strong>unquote</strong>操作符<code>!!</code>(发音为bang bang)可以将存储的代码树插入被捕获表达式中：</p>
+<pre class="r"><code>xx &lt;- expr(x + x)
+yy &lt;- expr(y + y)
+
+expr(!!xx / !!yy)
+## (x + x)/(y + y)
+cv &lt;- function(var) {
+  var &lt;- enexpr(var)
+  expr(sd(!!var) / mean(!!var))
+}
+
+cv(x + y)
+## sd(x + y)/mean(x + y)</code></pre>
+<p>多个表达式使用<code>!!!</code></p>
+<pre class="r"><code>xs &lt;- exprs(1, a, -b)
+expr(f(!!!xs, y))
+## f(1, a, -b, y)</code></pre>
+</div>
+<div id="评估evaluation代码" class="section level3">
+<h3>评估（<strong>Evaluation</strong>）代码</h3>
+<p><code>eval_tidy(expr,data = NULL,env = caller_env)</code>是<code>eval</code>的一种变体，其使用<code>as_data_mask</code>函数增加了一层数据掩码，<code>eval_tidy</code>的data参数中的对象优先于调用环境中的对象。</p>
+<p><strong>Advanced R</strong>展示了一个例子，用于解释使用数据掩码时必须始终使用<code>enquo()</code>而不是<code>enexpr()</code>。</p>
+<pre class="r"><code>with2 &lt;- function(df, expr) {
+  a &lt;- 1000
+  eval_tidy(enexpr(expr), df)
+}
+df &lt;- data.frame(x = 1:3)
+a &lt;- 10
+with2(df, x + a)
+## [1] 1001 1002 1003</code></pre>
+<p>可以看到捕获到的表达式中<code>a</code>变量的值为1000，而不是全局变量中的10，而rlang 使用一种新的数据结构解决这个问题: 将表达式与环境捆绑在一起的quosure。</p>
+<pre class="r"><code>with2 &lt;- function(df, expr) {
+  a &lt;- 1000
+  eval_tidy(enquo(expr), df)
+}
+
+with2(df, x + a)
+## [1] 11 12 13</code></pre>
+<p>可以看到<code>a变量</code>绑定到了定义了<code>x+a</code>的表达式环境中去了。</p>
+</div>
+<div id="解析表达式" class="section level3">
+<h3>解析表达式</h3>
+<p><code>parse_expr(x)</code>可以解析字符串为表达式，类似与<code>parse</code>,而<code>expr_text</code> 则类似<code>deparse</code></p>
+<pre class="r"><code>chr &lt;- &quot;y &lt;- x + 10&quot;
+(z &lt;- parse_expr(chr))
+## y &lt;- x + 10
+expr_text(z)
+## [1] &quot;y &lt;- x + 10&quot;</code></pre>
+<p><code>parse_exprs(x)</code>用于多个表达式,返回一个表达式<strong>list</strong>,类似于<code>as.list(parse(...))</code></p>
+<pre class="r"><code>path &lt;- tempfile(&quot;my-file.R&quot;)
+cat(&quot;1; 2; mtcars&quot;, file = path)
+parse_exprs(file(path))
+## [[1]]
+## [1] 1
+## 
+## [[2]]
+## [1] 2
+## 
+## [[3]]
+## mtcars</code></pre>
 </div>
 </div>
 </div>
