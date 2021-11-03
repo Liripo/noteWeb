@@ -11,25 +11,18 @@
 
 <meta name="author" content="Liripo" />
 
+<meta name="date" content="2021-11-03" />
 
-<title>index</title>
+<title>R网络分析note</title>
 
 <script src="site_libs/header-attrs-2.9/header-attrs.js"></script>
-<script src="site_libs/jquery-1.11.3/jquery.min.js"></script>
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<link href="site_libs/bootstrap-3.3.5/css/bootstrap.min.css" rel="stylesheet" />
-<script src="site_libs/bootstrap-3.3.5/js/bootstrap.min.js"></script>
-<script src="site_libs/bootstrap-3.3.5/shim/html5shiv.min.js"></script>
-<script src="site_libs/bootstrap-3.3.5/shim/respond.min.js"></script>
-<style>h1 {font-size: 34px;}
-       h1.title {font-size: 38px;}
-       h2 {font-size: 30px;}
-       h3 {font-size: 24px;}
-       h4 {font-size: 18px;}
-       h5 {font-size: 16px;}
-       h6 {font-size: 12px;}
-       code {color: inherit; background-color: rgba(0, 0, 0, 0.04);}
-       pre:not([class]) { background-color: white }</style>
+<script src="site_libs/jquery-3.6.0/jquery-3.6.0.min.js"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+<link href="site_libs/bootstrap-4.6.0/bootstrap.min.css" rel="stylesheet" />
+<script src="site_libs/bootstrap-4.6.0/bootstrap.bundle.min.js"></script>
+<script src="site_libs/bs3compat-0.3.1/transition.js"></script>
+<script src="site_libs/bs3compat-0.3.1/tabs.js"></script>
+<script src="site_libs/bs3compat-0.3.1/bs3compat.js"></script>
 <script src="site_libs/navigation-1.1/tabsets.js"></script>
 <link href="site_libs/highlightjs-9.12.0/default.css" rel="stylesheet" />
 <script src="site_libs/highlightjs-9.12.0/highlight.js"></script>
@@ -260,15 +253,57 @@ $(document).ready(function () {
 
 
 
-<h1 class="title toc-ignore">index</h1>
+<h1 class="title toc-ignore">R网络分析note</h1>
 <h4 class="author">Liripo</h4>
-<h4 class="date">2021/10/28</h4>
+<h4 class="date">2021-11-03</h4>
 
 </div>
 
 
-<p><a href="R-metaprogramming.html">R-metaprogramming.html</a></p>
-<p><a href="R网络分析note.html">R网络分析note</a></p>
+<p>R中网络分析常用的包<code>igraph</code>（包含算法与可视化）、<code>tidygraph</code>（使用tidy封装了igraph算法）、 <code>vizNetwork</code> (网络可视化htmlwidgets，使用viz.js)、<code>ggraph</code>（ggplot2 可视化网络）、<code>statnet</code>（用于网络数据表示、可视化、分析和模拟的集成工具）、<code>RCy3</code>（使用 CyREST 在<strong>R</strong>和 <strong>Cytoscape</strong>之间进行通信，允许使用 Cytoscape 点击式可视界面查看、探索和操作任何图形）。</p>
+<div id="igraph" class="section level1">
+<h1>igraph</h1>
+<pre class="r"><code>library(igraph,warn.conflicts = FALSE)
+library(igraphdata)</code></pre>
+<pre class="r"><code>
+data(macaque)
+class(macaque)
+## [1] &quot;igraph&quot;
+macaque
+## IGRAPH f7130f3 DN-- 45 463 -- 
+## + attr: Citation (g/c), Author (g/c), shape (v/c), name (v/c)
+## + edges from f7130f3 (vertex names):
+##  [1] V1 -&gt;V2     V1 -&gt;V3     V1 -&gt;V3A    V1 -&gt;V4     V1 -&gt;V4t    V1 -&gt;MT    
+##  [7] V1 -&gt;PO     V1 -&gt;PIP    V2 -&gt;V1     V2 -&gt;V3     V2 -&gt;V3A    V2 -&gt;V4    
+## [13] V2 -&gt;V4t    V2 -&gt;VOT    V2 -&gt;VP     V2 -&gt;MT     V2 -&gt;MSTd/p V2 -&gt;MSTl  
+## [19] V2 -&gt;PO     V2 -&gt;PIP    V2 -&gt;VIP    V2 -&gt;FST    V2 -&gt;FEF    V3 -&gt;V1    
+## [25] V3 -&gt;V2     V3 -&gt;V3A    V3 -&gt;V4     V3 -&gt;V4t    V3 -&gt;MT     V3 -&gt;MSTd/p
+## [31] V3 -&gt;PO     V3 -&gt;LIP    V3 -&gt;PIP    V3 -&gt;VIP    V3 -&gt;FST    V3 -&gt;TF    
+## [37] V3 -&gt;FEF    V3A-&gt;V1     V3A-&gt;V2     V3A-&gt;V3     V3A-&gt;V4     V3A-&gt;VP    
+## [43] V3A-&gt;MT     V3A-&gt;MSTd/p V3A-&gt;MSTl   V3A-&gt;PO     V3A-&gt;LIP    V3A-&gt;DP    
+## + ... omitted several edges
+data(Koenigsberg)
+Koenigsberg
+## IGRAPH 227bd5e UN-- 4 7 -- The seven bidges of Koenigsberg
+## + attr: name (g/c), name (v/c), Euler_letter (v/c), Euler_letter (e/c),
+## | name (e/c)
+## + edges from 227bd5e (vertex names):
+## [1] Altstadt-Loebenicht--Kneiphof          
+## [2] Altstadt-Loebenicht--Kneiphof          
+## [3] Altstadt-Loebenicht--Lomse             
+## [4] Kneiphof           --Lomse             
+## [5] Vorstadt-Haberberg --Lomse             
+## [6] Kneiphof           --Vorstadt-Haberberg
+## [7] Kneiphof           --Vorstadt-Haberberg</code></pre>
+<p>第一行中，字符编码的意义：</p>
+<ul>
+<li><p>D或者U代表有向（undireted）或者无向（undireted）</p></li>
+<li><p>N：第二个字母是“N”，用于命名图形。如果是破折号表示图表没有命名。</p></li>
+<li><p>W: 第三个字母是“W”，如果图形是加权的(换句话说，如果图形是值图，第2.4节)。非加权图在这个位置是破折号。</p></li>
+<li><p>B：第四个字母是“B”，代表是双向的（two-mode）; For unipartite (one-mode) graphs a dash is printed here。</p></li>
+</ul>
+<p>旁边两个数字代表顶点<code>vertices</code>数和边<code>edge</code>数。</p>
+</div>
 
 
 

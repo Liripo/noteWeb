@@ -1,0 +1,47 @@
+---
+title: "R网络分析note"
+author: "Liripo"
+date: "`r Sys.Date()`"
+output: 
+  html_document:
+    #code_folding: show
+    theme:
+      version: 4
+      #bootswatch: cerulean
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE,
+                      collapse = T,
+                      error = T)
+```
+
+R中网络分析常用的包`igraph`（包含算法与可视化）、`tidygraph`（使用tidy封装了igraph算法）、 `vizNetwork` (网络可视化htmlwidgets，使用viz.js)、`ggraph`（ggplot2 可视化网络）、`statnet`（用于网络数据表示、可视化、分析和模拟的集成工具）、`RCy3`（使用 CyREST 在**R**和 **Cytoscape**之间进行通信，允许使用 Cytoscape 点击式可视界面查看、探索和操作任何图形）。
+
+# igraph
+
+```{r}
+library(igraph,warn.conflicts = FALSE)
+library(igraphdata)
+```
+
+```{r}
+
+data(macaque)
+class(macaque)
+macaque
+data(Koenigsberg)
+Koenigsberg
+```
+
+第一行中，字符编码的意义：
+
+-   D或者U代表有向（undireted）或者无向（undireted）
+
+-   N：第二个字母是"N"，用于命名图形。如果是破折号表示图表没有命名。
+
+-   W: 第三个字母是"W"，如果图形是加权的(换句话说，如果图形是值图，第2.4节)。非加权图在这个位置是破折号。
+
+-   B：第四个字母是"B"，代表是双向的（two-mode）; For unipartite (one-mode) graphs a dash is printed here。
+
+旁边两个数字代表顶点`vertices`数和边`edge`数。

@@ -8,4 +8,7 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
-测试
+
+[R-metaprogramming.html](R-metaprogramming.html)
+
+[R网络分析note](R网络分析note.html)
